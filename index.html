@@ -100,7 +100,7 @@ const CH={
     lore:'Vallas, láminas y llantas. Nadie sabe quién la armó. Nadie ha logrado moverla.',
     tut:'La BARRICADA es un muro casi inmóvil: atrae los golpes y cada pocos segundos da un EMPUJÓN que avienta y aturde a todos los de enfrente.'},
   cohetero:{n:'Coheteros',uno:'Cohetero',rol:'Atrás',rar:'Raro',grp:2,lin:'Retaguardia',tipo:'A distancia',dano:'Ataque de área',alc:5,hab:'Apunta al montón',
-    col:'#ff6a3d',sc:1,hp:70,dmg:42,cd:3.4,spd:38,add:2,aoe:50,arty:true,rngMul:1.6,minR:140,ord:1,corto:'Artillería: fijos atrás',
+    col:'#ff6a3d',sc:1,hp:70,dmg:42,cd:3.4,spd:38,add:2,aoe:50,arty:true,rngMul:2.4,minR:140,ord:1,corto:'Artillería: fijos atrás',
     lore:'Compraron cohetones para la fiesta del santo. La fiesta se canceló.',
     tut:'Los COHETEROS se quedan fijos atrás: buscan donde hay más policías juntos, APUNTAN (el círculo rojo) y disparan muy lejos. Si alguien se les acerca, huyen.'},
   petardero:{n:'Petarderos',uno:'Petardero',rol:'Frente',rar:'Común',grp:2,lin:'Primera línea',tipo:'Explosivo',dano:'Meli (área)',alc:1,hab:'Ninguna',
@@ -504,7 +504,7 @@ function stepU(u,dt){
   if(d.archer){
     const t=nearest(u,foes(u));if(!t)return;
     const dd=hyp(t.x-u.x,t.y-u.y),dir=u.side?-1:1,fy=frontY(u);
-    if(dd>d.rng){let ty=t.y+dir*d.rng*.85;if(fy!==null)ty=u.side?Math.min(ty,fy-70):Math.max(ty,fy+70);moveTo(u,u.hx,clamp(ty,100,712),dt*.8);}
+    if(dd>d.rng){let ty=t.y+dir*d.rng*.85;if(fy!==null)ty=u.side?Math.min(ty,fy-70):Math.max(ty,fy+70);moveTo(u,u.hx,clamp(ty,u.side?150:100,712),dt*.8);}
     else{u.fx=(t.x-u.x)/(dd||1);u.fy=(t.y-u.y)/(dd||1);}
     const vi=Math.floor(M.t/d.cd);
     if(vi>(u.lv||0)&&dd<=d.rng&&u.fireT==null){u.lv=vi;u.fireT=rnd(0,.18);}
@@ -546,7 +546,7 @@ function stepU(u,dt){
     let ty=u.y;
     if(dd<d.rng*.5)ty=u.y+dir*60;else if(dd>d.rng*.95)ty=t.y+dir*d.rng*.8;
     if(fy!==null)ty=u.side?Math.min(ty,fy-55):Math.max(ty,fy+55);
-    moveTo(u,clamp(u.hx*.6+t.x*.4,40,380),clamp(ty,100,712),dt);
+    moveTo(u,clamp(u.hx*.6+t.x*.4,40,380),clamp(ty,u.side?150:100,712),dt);
     if(dd<=d.rng&&u.cd<=0){
       u.cd=d.cd*rnd(.9,1.15);u.lunge=.15;
       if(d.bolt){M.projs.push({x0:u.x,y0:u.y-16*u.s,x1:t.x,y1:t.y,t:0,dur:Math.max(.12,dd/520),src:u,tgt:t,bolt:true,col:'#a0522d',rot:Math.random()*6});sfx('hit');}
