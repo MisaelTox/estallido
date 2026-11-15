@@ -1647,35 +1647,67 @@ function drawGuide(){
   btn(222,py+ph-52,160,38,last?'¡A la calle!':'Siguiente',last?'#4fbf3a':'#f2a03a',()=>{if(last)fin();else M.guide++;},16);
   if(!last)btn(40,py+ph-48,90,30,'Saltar','#3a3350',fin,12,'rgba(243,236,224,.7)');
 }
+/* barra inferior: Colección, Batalla, Marcha (como en Draft Showdown) */
+function drawNav(act){
+  const y=H-64;ctx.fillStyle='#1a1430';ctx.fillRect(0,y,W,64);ctx.fillStyle='rgba(255,210,63,.35)';ctx.fillRect(0,y,W,2);
+  const tabs=[['col','Colección','🃏',0],['home','BATALLA','⚔️',1],['perfil','Marcha','📊',2]],tw=W/3;
+  tabs.forEach(([sc,lb,ic,k])=>{
+    const x=k*tw,on=act===sc,mid=k===1;
+    if(mid){RR(x+8,y-14,tw-16,74,16,on?'#f2a03a':'#8a5a1e','#ffd23f',3);}
+    else if(on)RR(x+10,y+6,tw-20,52,14,'rgba(255,255,255,.12)');
+    TX(ic,x+tw/2,y+(mid?22:30),mid?26:22,'#fff','center',700);
+    TXO(lb,x+tw/2,y+(mid?50:52),mid?15:12,on?'#ffd23f':'#cfc6e6','center','#2a1e14');
+    btns.push({x,y:y-(mid?14:0),w:tw,h:mid?78:64,fn:()=>{
+      if(sc==='home'&&SV.deck.length<DECK)return;
+      SWAP=null;scene=sc;}});
+  });
+}
+function topBar(){
+  RR(12,10,150,32,16,'rgba(0,0,0,.45)');TX('🏆',34,32,18,'#ffd23f','center',700);TXO(String(SV.tro),102,33,19,'#ffd23f','center');
+  RR(W-170,10,158,32,16,'rgba(0,0,0,.45)');TX(arena()[1],W-91,32,13,'#fff','center',800);
+}
 function drawHome(){
   nightBG('rgba(24,8,44,.12)');
+  topBar();
   /* logo chico */
-  ctx.save();ctx.font='58px '+LOGOF;ctx.textAlign='center';ctx.shadowColor='#ff3a7a';ctx.shadowBlur=14;ctx.lineWidth=5;ctx.lineJoin='round';ctx.strokeStyle='#2a0f2e';ctx.strokeText('ESTALLIDO',W/2,70);ctx.fillStyle='#2fd6ff';ctx.fillText('ESTALLIDO',W/2-2,69);ctx.fillStyle='#ff6fa8';ctx.fillText('ESTALLIDO',W/2,70);ctx.restore();
-  /* perfil */
-  const a=arena(),nx=ARENAS.find(q=>q[0]>SV.tro),pc=SV.games?Math.round(SV.wins/SV.games*100):0;
-  RR(30,104,360,176,18,'rgba(20,14,34,.82)','rgba(255,255,255,.14)',2);
-  TX('ARENA',50,134,11,'rgba(243,236,224,.55)','left',800);
-  TXT(a[1],50,166,28,'#fff','left');
-  TXO(String(SV.tro),352,166,26,'#ffd23f','right');TX('🏆',376,166,22,'#ffd23f','center',700);
-  {const ai=arIdx(),lo=a[0],hi=ARC[ai],p=(SV.tro-lo)/(hi-lo);RR(50,182,320,10,5,'#37324a');RR(50,182,Math.max(10,320*clamp(p,0,1)),10,5,SV.boss[ai]?'#9ae65c':'#ffd23f');
-    TX(SV.boss[ai]?(nx?'Jefe derrotado. Siguiente: '+nx[1]:'Jefe final derrotado'):bossReady()?'¡Te espera el jefe de la zona!':'Jefe de zona: '+BOSSN[ai]+' a los '+hi,50,210,11,bossReady()?'#ff8a9a':'rgba(243,236,224,.7)','left',600);}
-  ctx.fillStyle='rgba(255,255,255,.12)';ctx.fillRect(50,226,320,1);
-  [['Partidas',SV.games],['Victorias',SV.wins],['Efectividad',pc+'%']].forEach((q,i)=>{const cx=110+i*100;TXO(String(q[1]),cx,256,22,'#fff');TX(q[0],cx,272,10,'rgba(243,236,224,.6)','center',700);});
+  ctx.save();ctx.font='58px '+LOGOF;ctx.textAlign='center';ctx.shadowColor='#ff3a7a';ctx.shadowBlur=14;ctx.lineWidth=5;ctx.lineJoin='round';ctx.strokeStyle='#2a0f2e';ctx.strokeText('ESTALLIDO',W/2,102);ctx.fillStyle='#2fd6ff';ctx.fillText('ESTALLIDO',W/2-2,101);ctx.fillStyle='#ff6fa8';ctx.fillText('ESTALLIDO',W/2,102);ctx.restore();
+
+  const a=arena(),nx=ARENAS.find(q=>q[0]>SV.tro);
+  /* arena y progreso */
+  RR(22,128,376,112,18,'rgba(20,14,34,.82)','rgba(255,255,255,.14)',2);
+  TX('ARENA',42,154,11,'rgba(243,236,224,.55)','left',800);
+  TXT(a[1],42,188,28,'#fff','left');
+  {const ai=arIdx(),lo=a[0],hi=ARC[ai],p=(SV.tro-lo)/(hi-lo);RR(42,202,336,10,5,'#37324a');RR(42,202,Math.max(10,336*clamp(p,0,1)),10,5,SV.boss[ai]?'#9ae65c':'#ffd23f');
+    TX(SV.boss[ai]?(nx?'Jefe derrotado. Siguiente: '+nx[1]:'Jefe final derrotado'):bossReady()?'¡Te espera el jefe de la zona!':'Jefe de zona: '+BOSSN[ai]+' a los '+hi,42,230,11,bossReady()?'#ff8a9a':'rgba(243,236,224,.7)','left',600);}
   /* jugar */
-  const br=bossReady();
-  btn(40,318,340,76,'',br?'#c8344a':'#4fbf3a',()=>startMatch(br?arIdx():undefined),24);
-  if(br){TXT('¡JEFE DE ZONA!',W/2,357,32,'#fff','center','#5a0f1c');TX(BOSSN[arIdx()],W/2,380,12,'rgba(255,255,255,.9)','center',800);}else TXT('¡A LA CALLE!',W/2,370,34,'#fff','center','#1f5a12');
-  /* secciones */
-  const nU=Object.keys(CH).filter(id=>unlocked(id)).length,nT=Object.keys(CH).length;
+  const br=bossReady(),full=SV.deck.length===DECK;
+  btn(40,262,340,76,'',!full?'#5a4f8a':br?'#c8344a':'#4fbf3a',()=>{if(full)startMatch(br?arIdx():undefined);},24);
+  if(!full)TXT('ARMA TU MAZO',W/2,310,28,'#fff','center','#2a2040');
+  else if(br){TXT('¡JEFE DE ZONA!',W/2,301,32,'#fff','center','#5a0f1c');TX(BOSSN[arIdx()],W/2,324,12,'rgba(255,255,255,.9)','center',800);}else TXT('¡A LA CALLE!',W/2,314,34,'#fff','center','#1f5a12');
+  /* mazo */
+  TX('TU MAZO',42,376,12,'rgba(243,236,224,.65)','left',800);
   const nNew=Object.keys(CH).filter(id=>unlocked(id)&&!SV.deck.includes(id)).length;
-  const tile=(x,t,sub,col,fn,badge)=>{const hov=ptr.x>=x&&ptr.x<=x+166&&ptr.y>=428&&ptr.y<=528;RR(x,432,166,100,16,'rgba(0,0,0,.35)');RR(x,428-(hov?1:0),166,100,16,col,'rgba(255,255,255,.18)',2);TXT(t,x+83,466,22,'#fff');TX(sub,x+83,494,12,'rgba(255,255,255,.85)','center',700);if(badge)RR(x+126,420,36,22,11,'#ec4a86','#fff',2),TXO(String(badge),x+144,436,13,'#fff');btns.push({x,y:428,w:166,h:100,fn});};
-  tile(44,'MI MAZO',SV.deck.length+' de '+DECK+' cartas','#5a4f8a',()=>{scene='col';});
-  tile(210,'COLECCIÓN',nU+' de '+nT+' personajes','#3a6a9a',()=>{scene='col';},nNew||0);
+  if(nNew)chip(nNew+' personajes sin usar',W-42-(function(){ctx.font='900 12px '+FONT;return ctx.measureText(nNew+' personajes sin usar').width+18;})(),361,'#ec4a86');
+  SV.deck.forEach((id,i)=>{const x=22+i*94;miniCard(id,x,386,86,108,true);btns.push({x,y:386,w:86,h:108,fn:()=>{scene='col';}});});
+  for(let i=SV.deck.length;i<DECK;i++){RR(22+i*94,386,86,108,12,'rgba(0,0,0,.25)','rgba(255,255,255,.3)',2);}
   const nu=Object.keys(CH).filter(id=>CH[id].unlock&&!unlocked(id)).sort((x,y)=>CH[x].unlock-CH[y].unlock)[0];
-  if(nu)TX('Con '+CH[nu].unlock+' trofeos se une: '+CH[nu].n,W/2,574,13,'#c78bff','center',700);
-  /* pie */
-  btn(40,690,110,34,'Tutorial','rgba(255,255,255,.08)',()=>{delete SV.seen.guide;save();startMatch();},12,'rgba(243,236,224,.75)');
-  btn(250,690,130,34,confirmReset>0?'¿Seguro? Toca otra vez':'Borrar progreso','rgba(255,255,255,.08)',()=>{if(confirmReset>0){SV=fresh();save();confirmReset=0;}else confirmReset=3;},12,'rgba(243,236,224,.6)');
+  if(nu){RR(22,520,376,52,14,'rgba(199,139,255,.16)','rgba(199,139,255,.4)',2);TX('Próximo personaje',42,543,11,'rgba(243,236,224,.6)','left',800);TX(CH[nu].n+' con '+CH[nu].unlock+' trofeos',42,562,15,'#c78bff','left',800);TX('Faltan '+Math.max(0,CH[nu].unlock-SV.tro),W-42,556,18,'#fff','right',900);}
+  drawNav('home');
+}
+function drawPerfil(){
+  nightBG('rgba(24,8,44,.12)');topBar();
+  TXT('Tu marcha',W/2,86,32,'#fff');
+  const pc=SV.games?Math.round(SV.wins/SV.games*100):0,nU=Object.keys(CH).filter(id=>unlocked(id)).length,nT=Object.keys(CH).length,nB=Object.values(SV.boss).filter(Boolean).length;
+  const cells=[['Partidas',SV.games],['Victorias',SV.wins],['Efectividad',pc+'%'],['Personajes',nU+'/'+nT],['Jefes',nB+'/4'],['Trofeos',SV.tro]];
+  cells.forEach((q,i)=>{const x=22+(i%3)*126,y=112+Math.floor(i/3)*84;RR(x,y,118,74,14,'rgba(20,14,34,.82)','rgba(255,255,255,.12)',2);TXO(String(q[1]),x+59,y+40,24,'#fff');TX(q[0],x+59,y+62,11,'rgba(243,236,224,.65)','center',700);});
+  TX('ARENAS',42,310,12,'rgba(243,236,224,.65)','left',800);
+  ARENAS.forEach((q,i)=>{const y=322+i*52,ok=SV.tro>=q[0],cur=arIdx()===i;
+    RR(22,y,376,44,12,cur?'rgba(255,210,63,.18)':'rgba(255,255,255,.06)',cur?'#ffd23f':null,2);
+    TX(q[1],42,y+28,16,ok?'#fff':'rgba(255,255,255,.4)','left',800);
+    TX(ok?(SV.boss[i]?'Jefe derrotado ✔':q[0]+' 🏆'):'🔒 '+q[0]+' 🏆',W-40,y+28,12,SV.boss[i]?'#9ae65c':ok?'#ffd23f':'rgba(255,255,255,.45)','right',800);});
+  btn(40,548,150,38,'Tutorial','rgba(255,255,255,.1)',()=>{delete SV.seen.guide;save();startMatch();},13,'rgba(243,236,224,.85)');
+  btn(230,548,150,38,confirmReset>0?'¿Seguro? Toca otra vez':'Borrar progreso','rgba(255,255,255,.08)',()=>{if(confirmReset>0){SV=fresh();save();confirmReset=0;}else confirmReset=3;},12,'rgba(243,236,224,.6)');
+  drawNav('perfil');
 }
 function miniCard(id,x,y,w,h,inD){
   const c=CH[id],ok=unlocked(id);
@@ -1694,7 +1726,7 @@ function miniPol(id,x,y,w,h){
 }
 function drawCol(){
   nightBG();
-  TXO('Colección',W/2,40,26,'#fff');
+  TXO('Colección',W/2,34,24,'#fff');
   TX(SWAP?'Toca la carta del mazo que cambias por '+CH[SWAP].n:'Toca un personaje para ver su ficha.',W/2,60,11,SWAP?'#ffd23f':'rgba(243,236,224,.75)','center',700);
   RR(10,68,W-20,128,14,SWAP?'rgba(255,210,63,.35)':'rgba(255,190,90,.25)');
   SV.deck.forEach((id,i)=>{const x=24+i*96;miniCard(id,x,76,88,112,true);btns.push({x,y:76,w:88,h:112,fn:()=>{if(SWAP){SV.deck[i]=SWAP;SWAP=null;save();}else{INFO={side:0,id};scene='info';}}});});
@@ -1709,9 +1741,9 @@ function drawCol(){
   const py=214+Math.ceil(ids.length/4)*124+8;
   TX('LA POLICÍA (toca para ver cómo pelea)',24,py,11,'rgba(243,236,224,.7)','left',800);
   const PK2=Object.keys(PO).filter(i=>!PO[i].boss),nP=PK2.length,stP=Math.min(63,Math.floor(372/nP));PK2.forEach((id,i)=>{const x=24+i*stP;miniPol(id,x,py+8,stP-5,80);btns.push({x,y:py+8,w:stP-5,h:80,fn:()=>{SWAP=null;INFO={side:1,id};scene='info';}});});
-  if(SWAP){btn(80,H-64,260,48,'Cancelar','#5a4f8a',()=>{SWAP=null;},16);return;}
-  const ok=SV.deck.length===DECK;
-  btn(80,H-64,260,48,ok?'Listo':'Te faltan '+(DECK-SV.deck.length),ok?'#4fbf3a':'#5a4f8a',()=>{if(SV.deck.length===DECK)scene='home';},16);
+  if(SWAP)btn(W-100,10,88,32,'Cancelar','#8a4f6a',()=>{SWAP=null;},12);
+  if(SV.deck.length<DECK)TXO('Te faltan '+(DECK-SV.deck.length)+' cartas en el mazo para jugar',W/2,H-76,12,'#ffd23f','center');
+  drawNav('col');
 }
 /* la ficha de cada personaje, como en Draft Showdown */
 function drawInfo(){
@@ -1908,7 +1940,7 @@ function frame(ts){
   ctx.setTransform(dpr*sc,0,0,dpr*sc,dpr*ox,dpr*oy);
   ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   btns=[];
-  if(scene==='ending')drawEnding();else if(scene==='title')drawTitle();else if(scene==='home')drawHome();else if(scene==='col')drawCol();else if(scene==='info')drawInfo();else if(scene==='draft')drawDraft();else if(scene==='battle')drawBattle();else if(scene==='end')drawEnd();
+  if(scene==='ending')drawEnding();else if(scene==='title')drawTitle();else if(scene==='home')drawHome();else if(scene==='perfil')drawPerfil();else if(scene==='col')drawCol();else if(scene==='info')drawInfo();else if(scene==='draft')drawDraft();else if(scene==='battle')drawBattle();else if(scene==='end')drawEnd();
   if(BAN&&!(M&&M.tut)&&scene==='battle'){
     const b=BAN,a=b.t<.12?b.t/.12:b.t>b.dur-.3?(b.dur-b.t)/.3:1,s=1+(b.t<.12?(1-b.t/.12)*.5:0);
     ctx.save();ctx.globalAlpha=clamp(a,0,1);ctx.translate(W/2,H/2);ctx.scale(s,s);ctx.font='900 40px '+FONT;const bs=Math.min(40,Math.floor(40*(W-50)/Math.max(1,ctx.measureText(b.s).width)));TXO(b.s,0,10,bs,b.col);ctx.restore();
