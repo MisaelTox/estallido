@@ -100,7 +100,7 @@ const CH={
     lore:'Vallas, láminas y llantas. Nadie sabe quién la armó. Nadie ha logrado moverla.',
     tut:'La BARRICADA es un muro casi inmóvil: atrae los golpes y cada pocos segundos da un EMPUJÓN que avienta y aturde a todos los de enfrente.'},
   cohetero:{n:'Coheteros',uno:'Cohetero',rol:'Atrás',rar:'Raro',grp:2,lin:'Retaguardia',tipo:'A distancia',dano:'Ataque de área',alc:5,hab:'Apunta al montón',
-    col:'#ff6a3d',sc:1,hp:70,dmg:42,cd:3.4,spd:38,add:2,aoe:50,arty:true,minR:95,ord:1,corto:'Artillería: fijos atrás',
+    col:'#ff6a3d',sc:1,hp:70,dmg:42,cd:3.4,spd:38,add:2,aoe:50,arty:true,rngMul:1.6,minR:140,ord:1,corto:'Artillería: fijos atrás',
     lore:'Compraron cohetones para la fiesta del santo. La fiesta se canceló.',
     tut:'Los COHETEROS se quedan fijos atrás: buscan donde hay más policías juntos, APUNTAN (el círculo rojo) y disparan muy lejos. Si alguien se les acerca, huyen.'},
   petardero:{n:'Petarderos',uno:'Petardero',rol:'Frente',rar:'Común',grp:2,lin:'Primera línea',tipo:'Explosivo',dano:'Meli (área)',alc:1,hab:'Ninguna',
@@ -186,7 +186,7 @@ const PO={
   jefe3:{n:'El Comisario',uno:'El Comisario',boss:true,rol:'Jefe',rar:'Épico',grp:1,lin:'Primera línea',tipo:'Jefe',dano:'Embestida + gas',alc:1,hab:'Todo',
     col:'#8a1f2f',sc:2.0,hp:1400,dmg:26,cd:1,spd:34,add:1,big:true,shield:true,gasT:5,shove:5,contra:'Todo lo que tengas, junto.',lore:'Último escalón antes de la plaza.',tut:'EL COMISARIO tiene escudo, gas y empuje. Es el último jefe: usa todo.'}
 };
-for(const d of [...Object.values(CH),...Object.values(PO)])if(d.alc>1&&(d.bolt||d.aoe||d.fire||d.shot))d.rng=RNG[d.alc];
+for(const d of [...Object.values(CH),...Object.values(PO)])if(d.alc>1&&(d.bolt||d.aoe||d.fire||d.shot))d.rng=Math.round(RNG[d.alc]*(d.rngMul||1));
 const capOf=d=>d.big?2:Infinity;
 /* Maestría: sube usando al personaje. Desbloquea sus cartas especiales del draft. */
 const MAS=[15,45,90,160,260,400,600];
