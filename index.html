@@ -670,7 +670,7 @@ function endMatch(win){
 }
 
 /* ================= RUTA: modo roguelike (mapa, nodos, mejoras) ================= */
-const ZN=4;let RUNSC=1;
+const ZN=4;let RUNSC=.85;
 const NT={
   fight:{n:'Enfrentamiento',ic:'👊',col:'#e0a030',d:'Policía en la calle. Gana y elige una mejora.'},
   elite:{n:'Élite',ic:'💀',col:'#e0457b',d:'Policía más dura. La mejora es mejor.'},
@@ -714,7 +714,7 @@ function genRun(){
   return cols;
 }
 function startRun(){
-  SV.run={cols:genRun(),g:0,at:null,hearts:5,maxH:5,coins:20,relics:[],deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
+  SV.run={cols:genRun(),g:0,at:null,hearts:3,maxH:3,coins:20,relics:[],deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
   save();scene='map';
 }
 const runReach=()=>{const R=SV.run;if(!R||R.g>=R.cols.length)return[];const col=R.cols[R.g];if(R.g===0||R.at==null)return col.map((n,i)=>i);return R.cols[R.g-1][R.at].links.slice();};
