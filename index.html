@@ -204,6 +204,8 @@ function load(){
   return fresh();
 }
 let SV=load();SV.boss=SV.boss||{};
+/* marchas guardadas antes de bajar a 3 corazones: se ajustan una sola vez */
+if(SV.run&&SV.run.rv!==2){SV.run.rv=2;SV.run.maxH=Math.min(SV.run.maxH,3);SV.run.hearts=Math.min(SV.run.hearts,SV.run.maxH);}
 function save(){try{localStorage.setItem(SKEY,JSON.stringify(SV));}catch(e){}}
 const lvOf=id=>SV.lv[id]||1;
 const need=l=>2+l*2;
@@ -714,7 +716,7 @@ function genRun(){
   return cols;
 }
 function startRun(){
-  SV.run={cols:genRun(),g:0,at:null,hearts:3,maxH:3,coins:20,relics:[],deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
+  SV.run={rv:2,cols:genRun(),g:0,at:null,hearts:3,maxH:3,coins:20,relics:[],deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
   save();scene='map';
 }
 const runReach=()=>{const R=SV.run;if(!R||R.g>=R.cols.length)return[];const col=R.cols[R.g];if(R.g===0||R.at==null)return col.map((n,i)=>i);return R.cols[R.g-1][R.at].links.slice();};
