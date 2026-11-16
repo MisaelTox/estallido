@@ -1279,8 +1279,20 @@ function dirSet(u,base){const V=ARTVB[ARTID[u.id]||u.id];if(!V)return base;
   {const k=dy<0?'n':'s',st=V[k][0],c=V[k+'_c']||(V[k+'_c']={walk:V[k],atk:st,thr:st,wind:st,rec:st,hit:st});return c;}
 }
 let NEON_RIM=true;
+/* variaciones de tono del suéter: se recolorean solo los grises (el suéter), con su propio sombreado */
+const VARY={estudiante:[null,[98,114,148],[148,122,98],[86,86,94],[112,130,100],[152,130,150]]};
+function recol(c,T){const o=document.createElement('canvas');o.width=c.width;o.height=c.height;const x=o.getContext('2d');x.drawImage(c,0,0);
+  const d=x.getImageData(0,0,o.width,o.height),a=d.data;
+  for(let i=0;i<a.length;i+=4){if(!a[i+3])continue;const r=a[i],g=a[i+1],b=a[i+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b),L=(r+g+b)/3;
+    if(mx-mn<=14&&L>52&&L<200){const k=L/119;a[i]=Math.min(255,T[0]*k);a[i+1]=Math.min(255,T[1]*k);a[i+2]=Math.min(255,T[2]*k);}}
+  x.putImageData(d,0,0);return o;}
+function varSet(set,id,v){const T=VARY[id]&&VARY[id][v];if(!T)return set;const vc=set._v||(set._v={});if(vc[v])return vc[v];
+  const memo=new Map(),f=w=>{if(!w||!w.c)return w;if(!memo.has(w))memo.set(w,artWrap(recol(w.c,T)));return memo.get(w);};
+  const o={};for(const k in set){const q=set[k];o[k]=Array.isArray(q)?q.map(f):(q&&q.c)?f(q):q;}
+  return vc[v]=o;}
 function uSpr(u){
   let set=sprSet(u.id,u.side,u.up,u.seed||0,false);if(set.veh)return set.veh;if(ARTFD[ARTID[u.id]||u.id])set=dirSet(u,set);
+  if(VARY[u.id])set=varSet(set,u.id,(u.seed||0)%6);
   const d=u.d||{},ranged=d.rng||d.heal||d.pulse||d.convert||d.build||d.gasT||d.archer;
   if(u.hitT>0&&set.hit)return set.hit;
   if(u.aim||u.fireT!=null)return set.wind;
