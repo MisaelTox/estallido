@@ -234,6 +234,7 @@ function startMatch(bi,node){
   const R=node?SV.run:null;
   M={round:1,lives:node?[R.hearts,node.type==='fight'?2:3]:[LIVES,LIVES],maxL:node?R.maxH:LIVES,maxE:node?(node.type==='fight'?2:3):LIVES,run:!!node,node:node||null,army:{},parmy:{},pdeck:node?node.pdeck.slice():['cadete','anti',extra[0],extra[1]],speed:1,kos:0,lost:[false,false],used:{},boss:typeof bi==='number'?bi:null};
   if(node)for(const id in R.start){const q=R.start[id];M.army[id]={n:q.n,up:!!q.up};}
+  if(node&&hasRel('termo'))for(const id of R.deck)if(CH[id]){const a=M.army[id]||(M.army[id]={n:0,up:false});a.n=Math.min(capOf(CH[id]),a.n+1);}
   if(M.boss!=null)M.parmy['jefe'+M.boss]={n:1,up:false};
   prepRound();
 }
@@ -242,7 +243,7 @@ const defOf=(side,id)=>side?PO[id]:CH[id];
 function makeCard(side,id){
   const A=side?M.parmy:M.army,d=defOf(side,id),cur=A[id];
   const have=cur?cur.n:0,room=capOf(d)-have;
-  const n=Math.min(room,d.add+(!side&&masLv(id)>=5?1:0));
+  const n=Math.min(room,d.add+(!side&&masLv(id)>=5?1:0)+(!side&&M.run&&hasRel('megafono')?1:0));
   const canX2=side||masLv(id)>=1,canUp=side||masLv(id)>=2;
   /* si ya está lleno, no se ofrece una carta que no haría nada */
   const opts=n>0?[{id,kind:'add',n},{id,kind:'add',n}]:[];
@@ -322,7 +323,7 @@ function pickCard(i){
 /* ================= formación: filas limpias por tipo ================= */
 function mk(side,id,up){
   const d=defOf(side,id)||{hp:1};
-  const base=(side?M.pmult:lvMult(id))*(up?UPM:1);
+  const base=(side?M.pmult:lvMult(id))*(up?UPM*((!side&&M&&M.run&&hasRel('chamarra'))?1.2:1):1);
   const rd=(!side&&M&&M.run)?SV.run.dmg:1,rh=(!side&&M&&M.run)?SV.run.hp:1;
   const mult=base*rd*(side?1:masDmg(id)),hpm=base*rh*(side?1:masHp(id));
   const s=(d.sc||1)*(up?1.22:1);
@@ -641,7 +642,7 @@ function battleStep(dt){
   }
 }
 function afterRound(){
-  if(M.run){if(M.lives[1]<=0){runNodeWin();return;}if(M.lives[0]<=0){endRun(false);return;}M.round++;prepRound();return;}
+  if(M.run){if(M.lives[1]<=0){runNodeWin();return;}if(M.lives[0]<=0){const R=SV.run;if(hasRel('segunda')&&!R.segUsed){R.segUsed=true;M.lives[0]=2;BAN={s:'¡Segundo aire!',t:0,dur:1.6,col:'#7fe0ff'};}else{endRun(false);return;}}M.round++;prepRound();return;}
   if(M.lives[0]<=0||M.lives[1]<=0){endMatch(M.lives[1]<=0);return;}
   M.round++;prepRound();
 }
@@ -669,14 +670,30 @@ function endMatch(win){
 }
 
 /* ================= RUTA: modo roguelike (mapa, nodos, mejoras) ================= */
-const ZN=4;let RUNSC=.9;
+const ZN=4;let RUNSC=1;
 const NT={
   fight:{n:'Enfrentamiento',ic:'👊',col:'#e0a030',d:'Policía en la calle. Gana y elige una mejora.'},
   elite:{n:'Élite',ic:'💀',col:'#e0457b',d:'Policía más dura. La mejora es mejor.'},
   rest:{n:'Descanso',ic:'🔥',col:'#4fbf3a',d:'Un respiro en la fogata: cura o entrena.'},
   event:{n:'Evento',ic:'💬',col:'#8a7bff',d:'Algo pasa en la calle. Tú decides.'},
   recruit:{n:'Refuerzos',ic:'📣',col:'#2fb8e8',d:'Gente de otras colonias quiere unirse.'},
+  shop:{n:'Tianguis',ic:'🛒',col:'#e8c53a',d:'Gasta tus pesos: reliquias, curas y refuerzos.'},
   boss:{n:'Jefe de zona',ic:'🚔',col:'#d6283c',d:'El jefe de la zona bloquea el paso.'}};
+const RELICS={
+  megafono:{n:'Megáfono viejo',ic:'📢',d:'Cada carta de "+" suma 1 persona más.'},
+  botiquin:{n:'Botiquín del barrio',ic:'🩹',d:'Curas 1 corazón al ganar cada pelea.'},
+  alcancia:{n:'Alcancía',ic:'🐷',d:'Ganas 50% más pesos.'},
+  mapa:{n:'Mapa del metro',ic:'🗺️',d:'Ves los nodos 2 pasos adelante.'},
+  chamarra:{n:'Chamarra del 68',ic:'🧥',d:'Tus personajes UP son 20% más fuertes.'},
+  segunda:{n:'Segundo aire',ic:'💨',d:'Una vez: si llegas a 0 corazones, sigues con 2.'},
+  micro:{n:'Micrófono caliente',ic:'🎤',d:'+25% de daño, pero 1 corazón máximo menos.'},
+  termo:{n:'Termo de café',ic:'☕',d:'Empiezas cada pelea con 1 persona más de cada tipo.'}};
+const hasRel=id=>!!(SV.run&&SV.run.relics&&SV.run.relics.includes(id));
+function relicOpts(){
+  const R=SV.run,own=R.relics||[],ids=shuf(Object.keys(RELICS).filter(id=>!own.includes(id))).slice(0,3);
+  if(!ids.length)return perkOpts(true);
+  return ids.map(id=>({a:'relic',id,ic:RELICS[id].ic,t:RELICS[id].n,d:RELICS[id].d}));
+}
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(0,i);[a[i],a[j]]=[a[j],a[i]];}return a;};
 const pickOf=a=>a[ri(0,a.length-1)];
 function zoneEq(z,c){const lo=ARENAS[z][0],hi=ARC[z];return c===2?hi-1:Math.round(lo+(hi-lo)*(c===0?.2:.6));}
@@ -686,8 +703,8 @@ function genRun(){
   for(let z=0;z<ZN;z++)for(let c=0;c<3;c++){
     let ts;
     if(c===2)ts=['boss'];
-    else if(c===0)ts=z===0?['fight','fight','event']:['fight','fight',pickOf(['event','recruit'])];
-    else ts=z===0?['fight','rest','elite']:['elite','rest',pickOf(['fight','event','recruit'])];
+    else if(c===0)ts=z===0?['fight','fight','event']:['fight','fight',pickOf(['event','recruit','shop'])];
+    else ts=z===0?['fight','rest','elite']:['elite','rest',pickOf(['fight','event','recruit','shop'])];
     ts=shuf(ts);const eq=zoneEq(z,c);
     cols.push(ts.map((t,s)=>({g:z*3+c,s,z,c,type:t,eq,pdeck:rollPdeck(eq),links:[],done:false})));
   }
@@ -697,7 +714,7 @@ function genRun(){
   return cols;
 }
 function startRun(){
-  SV.run={cols:genRun(),g:0,at:null,hearts:5,maxH:5,deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
+  SV.run={cols:genRun(),g:0,at:null,hearts:5,maxH:5,coins:20,relics:[],deck:SV.deck.slice(),start:{},dmg:1,hp:1,cleared:0,eqMax:0,used:{},sel:null,pend:null};
   save();scene='map';
 }
 const runReach=()=>{const R=SV.run;if(!R||R.g>=R.cols.length)return[];const col=R.cols[R.g];if(R.g===0||R.at==null)return col.map((n,i)=>i);return R.cols[R.g-1][R.at].links.slice();};
@@ -733,6 +750,15 @@ function softOpts(type){
     if(n2>0)o.push({a:'start',id:id2,n:n2,card:id2,t:'Reunir gente: '+CH[id2].n,d:'Empiezas cada pelea con '+n2+' más.'});
     return{title:'Descanso',sub:'La fogata calienta un rato. Elige una.',opts:o.slice(0,3)};
   }
+  if(type==='shop'){
+    const o=[],own=R.relics||[],rl=shuf(Object.keys(RELICS).filter(id=>!own.includes(id)))[0];
+    if(rl)o.push({a:'relic',id:rl,ic:RELICS[rl].ic,t:RELICS[rl].n,d:RELICS[rl].d,cost:80});
+    if(R.hearts<R.maxH)o.push({a:'heal',n:1,ic:'🩹',t:'Curar 1 corazón',d:'Las médicas del tianguis te atienden.',cost:30});
+    const id=pickOf(deck),n=Math.min(capOf(CH[id])-((R.start[id]||{}).n||0),CH[id].add);
+    if(n>0)o.push({a:'start',id,n,card:id,t:CH[id].n+': +'+n,d:'Empiezas cada pelea con '+n+' más.',cost:25});
+    o.push(Math.random()<.5?{a:'dmg',v:.08,ic:'💥',t:'+8% de daño',d:'Playeras, banderas y buena música.',cost:45}:{a:'hp',v:.1,ic:'🛡️',t:'+10% de vida',d:'Cascos y cobijas de segunda mano.',cost:40});
+    return{title:'Tianguis',sub:'Tienes '+(R.coins||0)+' pesos. Compra lo que quieras.',opts:o.slice(0,4),shop:true,skip:{a:'none',t:'Salir del tianguis'}};
+  }
   if(type==='recruit'){
     const c=Object.keys(CH).filter(id=>unlocked(id)&&!R.deck.includes(id));
     if(!c.length||R.deck.length>=6)return{title:'Refuerzos',sub:'Nadie nuevo se une. Llevas gente de sobra.',opts:perkOpts(false)};
@@ -748,7 +774,9 @@ function softOpts(type){
 function applyOpt(o){
   const R=SV.run;if(!R||!o)return;
   const S=id=>R.start[id]||(R.start[id]={n:0,up:false});
-  if(o.a==='start'){S(o.id).n=Math.min(capOf(CH[o.id]),S(o.id).n+o.n);}
+  if(o.cost){if((R.coins||0)<o.cost)return;R.coins-=o.cost;}
+  if(o.a==='relic'){R.relics=R.relics||[];if(!R.relics.includes(o.id))R.relics.push(o.id);if(o.id==='micro'){R.dmg+=.25;R.maxH=Math.max(1,R.maxH-1);R.hearts=Math.min(R.hearts,R.maxH);}sfx('up');}
+  else if(o.a==='start'){S(o.id).n=Math.min(capOf(CH[o.id]),S(o.id).n+o.n);}
   else if(o.a==='up'){S(o.id).up=true;sfx('up');}
   else if(o.a==='dmg')R.dmg+=o.v;
   else if(o.a==='hp')R.hp+=o.v;
@@ -756,17 +784,20 @@ function applyOpt(o){
   else if(o.a==='heal')R.hearts=Math.min(R.maxH,R.hearts+o.n);
   else if(o.a==='recruit'){R.deck.push(o.id);S(o.id).n=CH[o.id].add;}
   else if(o.a==='hurt'){R.hearts=Math.max(1,R.hearts-1);R.pend={title:'Material del camión',sub:'Elige una mejora',opts:perkOpts(false)};save();return;}
+  if(o.cost&&R.pend&&R.pend.shop){R.pend.opts=R.pend.opts.filter(q=>q!==o);R.pend.sub='Tienes '+(R.coins||0)+' pesos. Compra lo que quieras.';save();return;}
   R.pend=null;scene='map';save();
 }
 function runNodeWin(){
   const R=SV.run,nd=M.node;R.hearts=Math.max(1,M.lives[0]);R.cleared++;nodeDone(nd);
+  const gain=Math.round((nd.type==='boss'?40:nd.type==='elite'?25:12)*(hasRel('alcancia')?1.5:1));R.coins=(R.coins||0)+gain;
+  if(hasRel('botiquin'))R.hearts=Math.min(R.maxH,R.hearts+1);
   for(const id in M.used)R.used[id]=(R.used[id]||0)+M.used[id];
   if(nd.type==='boss'){
     SV.boss[nd.z]=1;
     if(nd.z===ZN-1){endRun(true);return;}
     R.hearts=Math.min(R.maxH,R.hearts+2);
-    R.pend={title:'¡Zona liberada!',sub:ARENAS[nd.z][1]+' es tuya. Sigue '+ARENAS[nd.z+1][1]+'.',opts:perkOpts(true)};
-  }else R.pend={title:nd.type==='elite'?'¡Élite derrotada!':'¡Ganaste!',sub:'Elige una mejora para tu marcha',opts:perkOpts(nd.type==='elite')};
+    R.pend={title:'¡Zona liberada!',sub:ARENAS[nd.z][1]+' es tuya. +'+gain+' pesos. Elige una reliquia.',opts:relicOpts()};
+  }else R.pend=nd.type==='elite'?{title:'¡Élite derrotada!',sub:'+'+gain+' pesos. Elige una reliquia.',opts:relicOpts()}:{title:'¡Ganaste!',sub:'+'+gain+' pesos. Elige una mejora.',opts:perkOpts(false)};
   save();scene='opts';
 }
 function endRun(win){
@@ -1885,7 +1916,7 @@ function topBar(){
   RR(W-170,10,158,32,16,'rgba(0,0,0,.45)');TX(arena()[1],W-91,32,13,'#fff','center',800);
 }
 /* ---- pantallas de la ruta ---- */
-let RUNAB=-9;
+let RUNAB=-9,SHOWREL=false;
 function runHud(R,y0){
   RR(10,y0,200,34,12,'rgba(0,0,0,.5)');
   for(let i=0;i<R.maxH;i++)heart(26+i*(R.maxH>6?18:20),y0+17,7,i<R.hearts?'#7fb0ff':'#222');
@@ -1899,7 +1930,7 @@ function drawMap(){
   nightBG('rgba(24,8,44,.2)');
   runHud(R,10);
   const reach=runReach(),cg=Math.min(R.g,R.cols.length-1),z0=R.cols[cg][0].z;
-  TXT(ARENAS[z0][1],W/2,86,26,'#fff');
+  TXT(ARENAS[z0][1],W/2,104,24,'#fff');
   /* conexiones */
   for(let g=0;g<R.cols.length-1;g++){
     if(g>R.g)break;
@@ -1914,7 +1945,7 @@ function drawMap(){
     const col=R.cols[g],z=col[0].z;
     if(col[0].c===1)TX(ARENAS[z][1],12,runPos(g,0,3).y+4,9,'rgba(243,236,224,.4)','left',800);
     for(const nd of col){
-      const p=runPos(g,nd.s,col.length),known=g<=R.g+1||nd.type==='boss',t=NT[nd.type];
+      const p=runPos(g,nd.s,col.length),known=g<=R.g+(hasRel('mapa')?2:1)||nd.type==='boss',t=NT[nd.type];
       const ok=g===R.g&&reach.includes(nd.s),sel=ok&&R.sel===nd.s;
       const r=nd.type==='boss'?24:19;
       if(ok){const k=(Math.sin(T*5)+1)/2;C(p.x,p.y,r+5+k*3,'rgba(255,210,63,'+(.18+k*.14)+')');}
@@ -1941,10 +1972,21 @@ function drawMap(){
     }else{ctx.font='700 11px '+FONT;wrapT(t.d,28,724,230,11,'rgba(243,236,224,.8)',14);}
     btn(276,690,122,50,'AVANZAR','#4fbf3a',()=>enterNode(),17);
   }
+  /* pesos y reliquias */
+  {const rl=R.relics||[];RR(98,50,W-98-118,24,12,'rgba(0,0,0,.45)');TX('🪙 '+(R.coins||0),122,67,12,'#ffd23f','center',800);
+   rl.slice(0,6).forEach((id,i)=>TX(RELICS[id].ic,160+i*20,68,14,'#fff','center',700));
+   btns.push({x:98,y:50,w:W-98-118,h:24,fn:()=>{SHOWREL=!SHOWREL;}});}
   /* botones chicos */
   RR(12,50,78,24,12,'rgba(0,0,0,.45)');TX('‹ Inicio',51,67,12,'#fff','center',800);btns.push({x:12,y:50,w:78,h:24,fn:()=>{scene='home';}});
   const ab=T-RUNAB<3;RR(W-112,50,100,24,12,ab?'#c8344a':'rgba(0,0,0,.45)');TX(ab?'¿Seguro?':'Rendirse',W-62,67,12,'#fff','center',800);
   btns.push({x:W-112,y:50,w:100,h:24,fn:()=>{if(T-RUNAB<3)endRun(false);else RUNAB=T;}});
+  if(SHOWREL){
+    const rl=R.relics||[];RR(0,0,W,H,'rgba(8,5,16,.86)');TXT('Tus reliquias',W/2,110,28,'#fff');
+    if(!rl.length)TX('Todavía no tienes. Las dan las élites, los jefes y el tianguis.',W/2,170,13,'rgba(243,236,224,.85)','center',700);
+    rl.forEach((id,i)=>{const y=140+i*62;RR(24,y,372,54,14,'#2a2240','rgba(255,210,63,.4)',2);TX(RELICS[id].ic,52,y+36,28,'#fff','center',900);TXO(RELICS[id].n,78,y+24,15,'#ffd23f','left');TX(RELICS[id].d,78,y+43,fitS(RELICS[id].d,11,300,700),'rgba(243,236,224,.85)','left',700);});
+    TX('Toca para cerrar',W/2,720,12,'rgba(243,236,224,.6)','center',700);
+    btns.push({x:0,y:0,w:W,h:H,fn:()=>{SHOWREL=false;}});
+  }
 }
 function drawOpts(){
   const R=SV.run;if(!R||!R.pend){scene=R?'map':'home';return;}
@@ -1959,7 +2001,10 @@ function drawOpts(){
     if(o.card)miniCard(o.card,x+10,y+8-(hov?2:0),70,h-16,false);else TX(o.ic||'⭐',x+46,y+h/2+14,40,'#fff','center',900);
     TXO(o.t,x+92,y+36,fitS(o.t,18,270,900),'#ffd23f','left');
     wrapT(o.d,x+92,y+60,270,12,'rgba(243,236,224,.88)',15);
-    btns.push({x,y,w:376,h,fn:()=>{sfx('card');applyOpt(o);}});
+    const poor=o.cost&&(R.coins||0)<o.cost;
+    if(o.cost){RR(x+376-84,y+8,76,24,12,poor?'#5a2a30':'#3a5a2a');TX('🪙 '+o.cost,x+376-46,y+25,13,poor?'#ff9aa6':'#c8ff9a','center',900);}
+    if(poor)RR(x,y-(hov?2:0),376,h,16,'rgba(10,6,18,.55)');
+    btns.push({x,y,w:376,h,fn:()=>{if(poor)return;sfx('card');applyOpt(o);}});
   });
   if(p.skip)btn(90,156+n*(h+12)+6,240,44,p.skip.t,'rgba(255,255,255,.12)',()=>applyOpt(p.skip),13,'rgba(243,236,224,.9)');
 }
@@ -2255,7 +2300,7 @@ function frame(ts){
   ctx.save();ctx.beginPath();ctx.rect(0,0,W,H);ctx.clip();
   btns=[];
   if(scene==='ending')drawEnding();else if(scene==='map')drawMap();else if(scene==='opts')drawOpts();else if(scene==='title')drawTitle();else if(scene==='home')drawHome();else if(scene==='perfil')drawPerfil();else if(scene==='col')drawCol();else if(scene==='info')drawInfo();else if(scene==='draft')drawDraft();else if(scene==='battle')drawBattle();else if(scene==='end')drawEnd();
-  if(BAN&&!(M&&M.tut)&&scene==='battle'){
+  if(BAN&&!(M&&M.tut)&&(scene==='battle'||scene==='draft')){
     const b=BAN,a=b.t<.12?b.t/.12:b.t>b.dur-.3?(b.dur-b.t)/.3:1,s=1+(b.t<.12?(1-b.t/.12)*.5:0);
     ctx.save();ctx.globalAlpha=clamp(a,0,1);ctx.translate(W/2,H/2);ctx.scale(s,s);ctx.font='900 40px '+FONT;const bs=Math.min(40,Math.floor(40*(W-50)/Math.max(1,ctx.measureText(b.s).width)));TXO(b.s,0,10,bs,b.col);ctx.restore();
   }
