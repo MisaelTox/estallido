@@ -234,6 +234,8 @@ function startMatch(bi,node){
   const R=node?SV.run:null;
   M={round:1,lives:node?[R.hearts,node.type==='fight'?2:3]:[LIVES,LIVES],maxL:node?R.maxH:LIVES,maxE:node?(node.type==='fight'?2:3):LIVES,run:!!node,node:node||null,army:{},parmy:{},pdeck:node?node.pdeck.slice():['cadete','anti',extra[0],extra[1]],speed:1,kos:0,lost:[false,false],used:{},boss:typeof bi==='number'?bi:null};
   if(node)for(const id in R.start){const q=R.start[id];M.army[id]={n:q.n,up:!!q.up};}
+  /* la policía también arranca con una escuadra de cada tipo que trae (menos los pesados), igual que tu marcha */
+  if(node)for(const id of node.pdeck)if(id!=='tanqueta'&&id!=='montada')M.parmy[id]={n:PO[id].add,up:false};
   if(M.boss!=null)M.parmy['jefe'+M.boss]={n:1,up:false};
   prepRound();
 }
@@ -669,7 +671,7 @@ function endMatch(win){
 }
 
 /* ================= RUTA: modo roguelike (mapa, nodos, mejoras) ================= */
-const ZN=4;let RUNSC=1;
+const ZN=4;let RUNSC=.75;
 const NT={
   fight:{n:'Enfrentamiento',ic:'👊',col:'#e0a030',d:'Policía en la calle. Gana y elige una mejora.'},
   elite:{n:'Élite',ic:'💀',col:'#e0457b',d:'Policía más dura. La mejora es mejor.'},
